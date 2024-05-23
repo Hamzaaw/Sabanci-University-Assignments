@@ -1,0 +1,282 @@
+
+
+
+
+
+//Check if a specific coordinate has any moves possible
+//make sure last sample run is working properly
+//print when matrix is empty
+
+
+#include <iostream>
+using namespace std;
+#include <vector>
+#include <fstream>
+#include <string>
+
+
+
+bool checkIfEmpty(const vector<vector<char>>& matrix) {
+    for (size_t i = 0; i < matrix.size(); ++i) { // rows
+        for (size_t j = 0; j < matrix[i].size(); ++j) { // columns
+            if(matrix[i][j] != '-') {
+                return false; // non-empty cell is found
+            }
+        }
+    }
+    return true; // no non-empty cells are found
+}
+
+
+
+bool canMove(const vector<vector<char>>& matrix) {
+    if (matrix.empty()) return false; // checking if the matrix is empty.
+    
+    bool allEmpty = true;
+
+
+    for (size_t row = 0; row < matrix.size(); ++row) {
+        for (size_t col = 0; col < matrix[row].size(); ++col) {
+            char cell = matrix[row][col];
+            if (cell != '-') {
+                allEmpty = false;
+                
+            }
+        }
+    }
+
+    if(allEmpty) {
+        cout << "The matrix is empty.";
+        return false;
+    }
+
+    // Check for 'u' in the first row, 'd' in the last row, 'l' in the first column, and 'r' in the last column using indices.
+    for (size_t col = 0; col < matrix[0].size(); ++col) {
+        if (matrix[0][col] == 'u') return true; // can escape upwards.
+        if (matrix[matrix.size() - 1][col] == 'd') return true; // can escape downwards.
+    }
+
+    for (size_t row = 0; row < matrix.size(); ++row) {
+        if (matrix[row][0] == 'l') return true; // can escape left.
+        if (matrix[row][matrix[0].size() - 1] == 'r') return true; // can escape right.
+    }
+
+   
+    for (size_t row = 0; row < matrix.size(); ++row) {
+        for (size_t col = 0; col < matrix[row].size(); ++col) {
+            char cell = matrix[row][col];
+            if (cell != '-') {
+                
+                if ((cell == 'u' && row > 0 && matrix[row-1][col] == '-') ||
+                    (cell == 'd' && row < matrix.size() - 1 && matrix[row+1][col] == '-') ||
+                    (cell == 'l' && col > 0 && matrix[row][col-1] == '-') ||
+                    (cell == 'r' && col < matrix[0].size() - 1 && matrix[row][col+1] == '-')) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    cout << "No more moves are possible.";
+    return false; // no tile can move or escape.
+}
+
+
+bool fileOpen(const string& filename, vector<vector<char>>& matrix){
+    ifstream file(filename);
+    if (!file.is_open()) {
+        return false;}
+    
+    return true;
+    
+}
+
+
+
+bool readMatrixFromFile(const string& filename, vector<vector<char>>& matrix) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    string line;
+    size_t rowLength = 0;
+    bool firstLine = true;
+    while (getline(file, line)) {
+        if (firstLine) {
+            firstLine = false;
+            rowLength = line.size();
+        } else if (line.size() != rowLength) {
+            cout << "Erroneous file content. Program terminates.\n";
+            return false;
+        }
+
+        vector<char> row;
+        for (size_t i = 0; i < line.size(); ++i) {
+            char c = line[i];
+            if (c != 'r' && c != 'l' && c != 'u' && c != 'd' && c != '-') {
+                cout << "Erroneous file content. Program terminates.\n";
+                return false;
+            }
+            row.push_back(c);
+        }
+
+        matrix.push_back(row);
+    }
+
+    return true;
+}
+
+
+
+void displayMatrix(const vector<vector<char>>& matrix) {
+    // cout << "The matrix file contains:" << endl;
+    for (size_t i = 0; i < matrix.size(); ++i) {
+        for (size_t j = 0; j < matrix[i].size(); ++j) {
+            cout << matrix[i][j];
+        }
+        cout << endl;
+    }
+}
+
+bool moveTile(vector<vector<char>>& matrix, int row, int col) {
+    if (matrix[row][col] == '-') {
+        return false; // empty cell.
+    }
+
+    char direction = matrix[row][col];
+    int newRow = row, newCol = col;
+
+  
+    bool moved = false;
+    bool checkk = true;
+    while (checkk) {
+        if (direction == 'u') {
+            if (newRow == 0 || (newRow - 1 >= 0 && matrix[newRow - 1][newCol] != '-')) {
+                checkk = false;
+            } else {
+                newRow--;
+                moved = true;
+            }
+            if(newRow == 0) {
+                matrix[row][col] = '-';
+                return true;
+            }
+        } else if (direction == 'd') {
+            if (newRow + 1 >= matrix.size() || (newRow + 1 < matrix.size() && matrix[newRow + 1][newCol] != '-')) {
+                checkk = false;
+            } else {
+                newRow++;
+                moved = true;
+            }
+            if(newRow + 1 == matrix.size()) {
+                matrix[row][col] = '-';
+                return true;
+            }
+        } else if (direction == 'l') {
+            if (newCol == 0 || (newCol - 1 >= 0 && matrix[newRow][newCol - 1] != '-')) {
+                checkk = false;
+            } else {
+                newCol--;
+                moved = true;
+            }
+            if(newCol == 0) {
+                matrix[row][col] = '-';
+                return true;
+            }
+        } else if (direction == 'r') {
+            if (newCol + 1 >= matrix[0].size() || (newCol + 1 < matrix[0].size() && matrix[newRow][newCol + 1] != '-')) {
+                checkk = false;
+            } else {
+                newCol++;
+                moved = true;
+            }
+            if(newCol + 1 == matrix[0].size()) {
+                matrix[row][col] = '-';
+                return true;
+            }
+        } else {
+ 
+            return false;
+        }
+
+        
+    }
+
+    if (moved) {
+        // perform the movement
+
+//
+//        //clear  original position.
+//        matrix[row][col] = '-';
+        matrix[newRow][newCol] = matrix[row][col];
+        matrix[row][col] = '-';
+        return true;
+    }
+
+    return false; // No movement.
+}
+
+
+int main() {
+    vector<vector<char>> matrix;
+    string filename;
+    cout << "Please enter the file name:\n";
+    
+    bool fileOpened = false;
+
+    while (!fileOpened && cin >> filename) {
+        if (fileOpen(filename, matrix)){
+            fileOpened = true;
+        } else {
+            cout << "Could not open the file. Please enter a valid file name:\n";
+        }
+    }
+
+    
+    bool once = true;
+    
+    
+    if(!readMatrixFromFile(filename,matrix)){
+        return 0;
+    }
+    else{
+        if(once){
+            cout<<"The matrix file contains:"<<endl;
+            once = false;
+        }
+        displayMatrix(matrix);
+        
+        if(checkIfEmpty(matrix)){
+            cout<<"The matrix is empty."<<endl;
+        }
+        
+        
+        else{
+            
+            if(!canMove(matrix)){
+            }
+            
+            else{
+                
+                int row, col;
+                while (canMove(matrix)) {
+                    cout << "Please enter the row and column of the tile that you want to move:\n";
+                    cin >> row >> col;
+                    if (row < 0 || row >= matrix.size() || col < 0 || col >= matrix[0].size()) {
+                        cout << "Invalid row or column index.\n";
+                    } else {
+                        if (moveTile(matrix, row, col)) {
+                            cout << "Tile at ("<<row<<","<<col<<") has been moved.\n";
+                        } else {
+                            cout << "No tiles have been moved.\n";
+                        }
+                        displayMatrix(matrix);
+                        
+                    }
+                }
+               
+            }}}
+
+    return 0;
+}
