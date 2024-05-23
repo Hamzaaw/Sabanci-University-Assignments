@@ -1,0 +1,314 @@
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+
+/* Begin: code taken from CS204-Spring2024-Homework2.pdf
+ */
+struct NodeLike{
+       string subject;
+       string object;
+       NodeLike* next;
+    NodeLike(string s, string o) {
+        subject = s;
+        object = o;
+        next = nullptr;
+    }
+};
+ 
+/* End: code taken from CS204-Spring2024-Homework2.pdf
+ */
+
+
+struct NodeTaken {
+    string name;
+    NodeTaken* next;
+    NodeTaken(string n) {
+        name = n;
+        next = nullptr;
+    }
+
+};
+
+
+
+class TakenList {
+public:
+    NodeTaken* headTaken;
+    TakenList() {
+        headTaken = nullptr;
+    }
+
+
+    void addTaken(string name);
+    bool isTaken(string name);
+    void displayTaken();
+    ~TakenList();
+};
+
+
+
+class LikesList {
+public:
+    NodeLike* headLikes;
+    LikesList() {
+        headLikes = nullptr;
+    }
+
+    void addLike(string subject, string object, TakenList& takenList);
+    bool existsLike(string subject, string object);
+    void removeLikes(string name);
+    void displayLikes();
+    ~LikesList();
+};
+
+void LikesList::addLike(string subject, string object, TakenList& takenList) {
+    // Rule 1: Check if either subject or object is already taken
+    if (takenList.isTaken(subject) || takenList.isTaken(object)) {
+//        cout<<"Rule 1";
+        cout<<"Either "<< subject <<" or "<< object<<" or both is/are already taken, so the like relation is not added."<<endl;
+        return; // Skip adding if either is taken
+    }
+    
+    // Rule 2: Check for redundancy
+    NodeLike* current = headLikes;
+    while (current != nullptr) {
+        if (current->subject == subject && current->object == object) {
+            // Relationship is redundant, do not add
+            cout<< subject<< " likes " <<object<< " relation already exists in the likes list, so it is not added to it."<<endl;
+           
+            return;
+        }
+        current = current->next;
+    }
+    
+    // Rule 3: Check for mutual like
+    current = headLikes;
+    NodeLike* prev = nullptr;
+    while (current != nullptr) {
+        if (current->subject == object && current->object == subject) {
+//            cout<<"Rule 3";
+            cout<<"Match found: "<<subject<<" likes "<<object <<" and "<<object<<" likes "<<subject<<"."<<endl;
+            // Mutual like found, add both to taken list and remove related nodes
+            if (subject < object) {
+                takenList.addTaken(subject);
+                takenList.addTaken(object);
+            } else {
+                takenList.addTaken(object);
+                takenList.addTaken(subject);
+            }
+            cout<<"Added to taken list: "<<subject<<endl;
+            cout<<"Added to taken list: "<<object<<endl;
+            removeLikes(subject);
+            removeLikes(object);
+            cout<<"Any node that has "<<subject<< " or " <<object<<" or both in it is removed from the likes list."<<endl;
+            return;
+        }
+        prev = current;
+        current = current->next;
+    }
+    
+    NodeLike* newNode = new NodeLike(subject, object);
+    cout<<subject<< " likes " <<object<<" relation has been added to the likes list."<<endl;
+    if (headLikes == nullptr) {
+//        cout<<"Rule 4";
+        // List is empty
+        headLikes = newNode;
+       
+    } else {
+//        cout<<"Rule 4";
+        // find the position 
+        NodeLike* temp = headLikes;
+        NodeLike* lastSubjectNode = nullptr;
+        while (temp != nullptr) {
+            if (temp->subject == subject) {
+                lastSubjectNode = temp; // Last occurrence 
+//                cout<<"Rule 4";
+            }
+            temp = temp->next;
+        }
+
+        if (lastSubjectNode != nullptr) {
+//            cout<<"Rule 4";
+            // Insert after the last occurrence of the subject
+            newNode->next = lastSubjectNode->next;
+            lastSubjectNode->next = newNode;
+        } else {
+//            cout<<"Rule 4";
+            //  not found
+            if (prev != nullptr) {
+                prev->next = newNode;
+            } else {
+                headLikes = newNode; // list was  empty
+            }
+        }
+    }
+}
+
+
+bool LikesList::existsLike(string subject, string object) {
+    NodeLike* temp = headLikes;
+    while (temp != nullptr) {
+        if (temp->subject == subject && temp->object == object) {
+            return true;
+        }
+        temp = temp->next;
+    }
+    return false;
+}
+
+
+void LikesList::removeLikes(string name) {
+    NodeLike *temp = headLikes, *prev = nullptr;
+    while (temp != nullptr) {
+        if (temp->subject == name || temp->object == name) {
+            if (prev == nullptr) {
+                headLikes = temp->next;
+                delete temp;
+                temp = headLikes;
+            } else {
+                prev->next = temp->next;
+                delete temp;
+                temp = prev->next;
+            }
+            
+            
+            
+        } else {
+            prev = temp;
+            temp = temp->next;
+        }
+    }
+}
+
+
+void LikesList::displayLikes() {
+    NodeLike* temp = headLikes;
+    while (temp != nullptr) {
+        cout << "(" << temp->subject << ", " << temp->object << ") ";
+        temp = temp->next;
+    }
+    cout << endl;
+}
+
+LikesList::~LikesList() {
+    NodeLike* current = headLikes;
+    while (current != nullptr) {
+        NodeLike* next = current->next;
+        delete current;
+        current = next;
+    }
+    headLikes = nullptr;
+}
+
+
+
+
+void TakenList::addTaken(string name) {
+    NodeTaken* newNode = new NodeTaken(name);
+
+    if (headTaken == nullptr || headTaken->name > name) {
+        newNode->next = headTaken;
+        headTaken = newNode;
+    } else {
+        // Find the  position
+        NodeTaken* current = headTaken;
+        while (current->next != nullptr && current->next->name < name) {
+            current = current->next;
+        }
+        // insert new node
+        newNode->next = current->next;
+        current->next = newNode;
+    }
+}
+
+
+bool TakenList::isTaken(string name) {
+    NodeTaken* temp = headTaken;
+    while (temp != nullptr) {
+        if (temp->name == name) {
+            return true;
+        }
+        temp = temp->next;
+    }
+    return false;
+}
+
+void TakenList::displayTaken() {
+    NodeTaken* temp = headTaken;
+    while (temp != nullptr) {
+        cout << temp->name << " ";
+        temp = temp->next;
+    }
+    cout << endl;
+}
+
+TakenList::~TakenList() {
+    NodeTaken* current = headTaken;
+    while (current != nullptr) {
+        NodeTaken* next = current->next;
+        delete current;
+        current = next;
+    }
+    headTaken = nullptr;
+}
+
+
+
+int main() {
+    LikesList likesList;
+    TakenList takenList;
+    ifstream inputFile;
+    string filename;
+
+    cout << "Please enter the file name:" << endl;
+    
+    
+    bool Opened = true;
+    
+    while (Opened) {
+        cin >> filename;
+        inputFile.open(filename);
+
+        if (inputFile.is_open()) {
+            Opened = false; //  opened the file
+        } else {
+            cout << "Could not open the file. Please enter a valid file name: " << endl;
+        }
+    }
+
+    string line, subject, object;
+    int lineNumber = 0;
+    
+    while (getline(inputFile, line)) {
+        lineNumber++;
+        int pos = line.find(" likes ");
+        
+        
+        if (pos != string::npos) {
+            subject = line.substr(0, pos);
+            object = line.substr(pos + 7);
+            
+            cout << "Read line number (" << lineNumber << "): " << subject << " likes " << object << endl;
+            
+
+            likesList.addLike(subject, object, takenList);
+            
+            // display the contents
+            cout << "Likes list: ";
+            likesList.displayLikes();
+            cout << "Taken list: ";
+            takenList.displayTaken();
+            cout << endl;
+        }
+
+    }
+
+    
+    inputFile.close();
+    cout << "Lists are deleted and the program ends successfully." << endl;
+    return 0;
+}
